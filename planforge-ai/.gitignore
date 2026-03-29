@@ -1,0 +1,37 @@
+# ----------------------
+# Python (Backend)
+# ----------------------
+backend/.venv/
+backend/__pycache__/
+backend/*.pyc
+backend/*.pyo
+backend/*.pyd
+backend/.env
+.venv
+venv
+__pycache__
+
+# ----------------------
+# Node (Frontend - Vite)
+# ----------------------
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+node_modules
+
+# ----------------------
+# General
+# ----------------------
+.env
+*.log
+*.sqlite3
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# JetBrains IDEs
+.idea/
