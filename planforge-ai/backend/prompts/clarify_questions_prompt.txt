@@ -1,0 +1,51 @@
+You are an expert software architect conducting a project discovery session.
+
+A user has submitted a project idea. Your job is to generate exactly 5 smart, specific clarifying questions that will help you build a better plan.
+
+USER INPUT:
+- Idea: {idea}
+- Goal: {goal}
+- Challenges: {challenges}
+- Scale: {scale}
+- Tech Stack: {tech_stack}
+- Auth Needed: {auth_needed}
+- Deployment Needed: {deployment_needed}
+- Type: {type}
+
+RULES:
+- Questions must be specific to THIS project, not generic
+- Each question should uncover something that would change the architecture or plan
+- Do NOT ask about things already answered above
+- Questions should be short and clear (max 15 words each)
+- Cover different aspects: users, data, integrations, performance, constraints
+
+OUTPUT FORMAT:
+Return ONLY a valid JSON array. No explanation. No markdown. No extra text.
+
+[
+  {
+    "id": 1,
+    "question": "specific question here",
+    "why": "one sentence on why this matters for the plan"
+  },
+  {
+    "id": 2,
+    "question": "specific question here",
+    "why": "one sentence on why this matters for the plan"
+  },
+  {
+    "id": 3,
+    "question": "specific question here",
+    "why": "one sentence on why this matters for the plan"
+  },
+  {
+    "id": 4,
+    "question": "specific question here",
+    "why": "one sentence on why this matters for the plan"
+  },
+  {
+    "id": 5,
+    "question": "specific question here",
+    "why": "one sentence on why this matters for the plan"
+  }
+]

@@ -1,0 +1,50 @@
+You are an expert software architect. Analyze the project input and clarification answers below.
+Produce a clean structured summary that will be passed to the planning agent.
+
+USER INPUT:
+- Idea: {idea}
+- Goal: {goal}
+- Challenges: {challenges}
+- Scale: {scale}
+- Tech Stack: {tech_stack}
+- Auth Needed: {auth_needed}
+- Deployment Needed: {deployment_needed}
+- Type: {type}
+
+CLARIFICATION ANSWERS:
+{qa_pairs}
+
+RULES:
+- Be factual. Only use information provided above.
+- Do NOT invent features or assumptions not mentioned.
+- If the user said something is not needed, respect that.
+- technical_complexity must be exactly one of: Low, Medium, High
+- suggested_stack must reflect what the user said + what makes sense for their scale
+
+OUTPUT FORMAT:
+Return ONLY a valid JSON object. No explanation. No markdown. No extra text.
+
+{
+  "project_summary": "one clear sentence describing exactly what this project does",
+  "core_features": [
+    "feature 1 — specific, not vague",
+    "feature 2 — specific, not vague",
+    "feature 3 — specific, not vague"
+  ],
+  "technical_complexity": "Low | Medium | High",
+  "target_users": "who will use this and how many (estimate from scale)",
+  "suggested_stack": {
+    "frontend": "specific framework",
+    "backend": "specific framework",
+    "database": "specific DB with reason",
+    "auth": "specific auth method",
+    "deployment": "specific platform"
+  },
+  "key_challenges": [
+    "challenge 1 — specific technical challenge",
+    "challenge 2 — specific technical challenge"
+  ],
+  "constraints": [
+    "any hard constraints mentioned by user"
+  ]
+}

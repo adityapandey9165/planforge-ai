@@ -1,0 +1,13 @@
+You are a software architect. Generate a detailed system design for this project.
+
+PROJECT PLAN:
+{plan}
+
+IMPORTANT: Return ONLY a valid JSON object. No explanation. No markdown. No text before or after the JSON.
+
+The JSON must have exactly these 4 keys: system_design, api_endpoints, database_schema, mermaid_diagram.
+
+- system_design: 2-3 sentences describing how frontend, backend, and database connect
+- api_endpoints: array of all REST endpoints with method, path, description, auth_required
+- database_schema: array of tables with name and columns array
+- mermaid_diagram: valid Mermaid graph TD string showing the architecture flow

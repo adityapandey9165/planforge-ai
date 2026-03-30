@@ -1,0 +1,53 @@
+You are an expert software architect and project manager.
+Using the clarified project summary below, generate a detailed, realistic development plan.
+
+CLARIFIED PROJECT DATA:
+{clarified}
+
+RULES:
+- MVP steps must be ordered correctly — foundation before features
+- Each step must be concrete and actionable, not vague
+- Estimated days must be realistic (not everything is 1 day)
+- must_have features are non-negotiable for launch
+- nice_to_have features are post-MVP
+- recommended_stack must match what was in the clarified data
+- total_estimated_weeks must equal the sum of all step days divided by 5 (working days), rounded up
+- Do NOT suggest technologies not mentioned or clearly implied by the project
+
+OUTPUT FORMAT:
+Return ONLY a valid JSON object. No explanation. No markdown. No extra text.
+
+{
+  "mvp_steps": [
+    {
+      "step": 1,
+      "title": "short title",
+      "description": "exactly what to build in this step",
+      "estimated_days": 2,
+      "deliverable": "what you can demo after this step"
+    },
+    {
+      "step": 2,
+      "title": "short title",
+      "description": "exactly what to build in this step",
+      "estimated_days": 3,
+      "deliverable": "what you can demo after this step"
+    }
+  ],
+  "features": {
+    "must_have": [
+      "feature with brief description"
+    ],
+    "nice_to_have": [
+      "feature with brief description"
+    ]
+  },
+  "recommended_stack": {
+    "frontend": "framework + reason",
+    "backend": "framework + reason",
+    "database": "DB + reason",
+    "deployment": "platform + reason"
+  },
+  "total_estimated_weeks": 4,
+  "timeline_breakdown": "2-3 sentence realistic summary of the timeline and phases"
+}

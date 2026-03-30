@@ -1,0 +1,48 @@
+You are a senior software architect refining an existing project plan based on user feedback.
+
+ORIGINAL PLAN:
+{original_plan}
+
+ORIGINAL ARCHITECTURE:
+{original_architecture}
+
+ORIGINAL EVALUATION SCORE: {original_score}/5
+ORIGINAL EVALUATION FEEDBACK: {original_feedback}
+
+USER ENHANCEMENT REQUEST:
+"{enhancement_request}"
+
+RULES:
+- Only change what the user asked to change
+- Keep everything else from the original plan intact
+- If user asks to change stack, update ALL affected parts consistently
+- If user asks for more detail, expand that specific section
+- Do NOT start from scratch — this is a refinement, not a new plan
+- The new plan must address the original evaluation feedback if possible
+- Output must follow the exact same structure as the original plan
+
+OUTPUT FORMAT:
+Return ONLY a valid JSON object with both updated plan and architecture. No explanation. No markdown. No extra text.
+
+{
+  "plan": {
+    "mvp_steps": [...],
+    "features": {
+      "must_have": [...],
+      "nice_to_have": [...]
+    },
+    "recommended_stack": {...},
+    "total_estimated_weeks": 4,
+    "timeline_breakdown": "..."
+  },
+  "architecture": {
+    "system_design": "...",
+    "api_endpoints": [...],
+    "database_schema": [...],
+    "mermaid_diagram": "graph TD\n    ..."
+  },
+  "changes_made": [
+    "description of change 1",
+    "description of change 2"
+  ]
+}
