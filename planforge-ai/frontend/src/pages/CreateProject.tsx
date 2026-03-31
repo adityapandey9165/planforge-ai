@@ -11,7 +11,7 @@ async function getToken() {
   return data.session?.access_token;
 }
 
-type Step = "form" | "questions" | "generating";
+type Step = "form" | "questions" | "generating" | "bad-idea-warning";
 
 interface Question {
   id: number;
@@ -35,6 +35,7 @@ export default function CreateProject() {
     deployment_needed: false,
     type: "Personal",
   });
+  const [badIdeaResult, setBadIdeaResult] = useState<any>(null);
 
   // Questions state
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -48,6 +49,20 @@ export default function CreateProject() {
 
     try {
       const token = await getToken();
+      // Run bad idea detector first
+const badIdeaRes = await fetch(`${API}/detect-bad-idea`, {
+  method: "POST",
+  headers: getApiHeaders(token),
+  body: JSON.stringify(form),
+});
+if (badIdeaRes.ok) {
+  const badIdea = await badIdeaRes.json();
+  if (badIdea.risk_level === "High" && badIdea.problems.length > 0) {
+    setBadIdeaResult(badIdea);
+    setStep("bad-idea-warning");
+    return;
+  }
+}
       const res = await fetch(`${API}/clarify-questions`, {
         method: "POST",
         headers: getApiHeaders(token),
@@ -197,7 +212,82 @@ export default function CreateProject() {
       </>
     );
   }
+if (step === "bad-idea-warning") {
+  return (
+    <>
+      <Navbar />
+      <div className="min-h-screen bg-gray-50 pt-20 pb-12 px-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white rounded-xl border border-red-200 p-6 mb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-2xl">⚠️</span>
+              <h2 className="text-lg font-semibold text-red-700">High Risk Idea Detected</h2>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">{badIdeaResult?.summary}</p>
 
+            {/* Problems */}
+            <div className="space-y-3 mb-4">
+              {badIdeaResult?.problems?.map((p: any, i: number) => (
+                <div key={i} className="bg-red-50 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-semibold text-red-600 bg-red-100 px-2 py-0.5 rounded-full">
+                      {p.type}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-700 mb-1">{p.issue}</p>
+                  <p className="text-xs text-indigo-600">💡 {p.suggestion}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Strengths */}
+            {badIdeaResult?.strengths?.length > 0 && (
+              <div className="bg-green-50 rounded-lg p-3 mb-4">
+                <p className="text-xs font-semibold text-green-700 mb-2">✓ Strengths</p>
+                {badIdeaResult.strengths.map((s: string, i: number) => (
+                  <p key={i} className="text-xs text-gray-600">• {s}</p>
+                ))}
+              </div>
+            )}
+
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => setStep("form")}
+                className="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-lg text-sm hover:bg-gray-50 transition"
+              >
+                ← Revise Idea
+              </button>
+              <button
+                onClick={async () => {
+                  setStep("generating");
+                  try {
+                    const token = await getToken();
+                    const res = await fetch(`${API}/clarify-questions`, {
+                      method: "POST",
+                      headers: getApiHeaders(token),
+                      body: JSON.stringify(form),
+                    });
+                    if (res.status === 429) { setRateLimited(true); setStep("form"); return; }
+                    if (!res.ok) throw new Error("Failed");
+                    const data = await res.json();
+                    setQuestions(data.questions);
+                    setStep("questions");
+                  } catch {
+                    setError("Something went wrong.");
+                    setStep("form");
+                  }
+                }}
+                className="flex-1 bg-indigo-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-indigo-700 transition"
+              >
+                Proceed Anyway →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
   // ── Form screen ────────────────────────────────────────────────────────────
   return (
     <>
