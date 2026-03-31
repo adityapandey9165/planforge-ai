@@ -176,6 +176,66 @@ export default function OutputView() {
     setLastSavedResult(JSON.stringify(v.output_data));
     setSaved(true);
   };
+  const exportMarkdown = () => {
+  const lines: string[] = [];
+
+  lines.push(`# ${clarified?.project_summary || "Project Plan"}`);
+  lines.push(`\n**Score:** ${evaluation?.score}/5\n`);
+
+  lines.push(`## Core Features`);
+  clarified?.core_features?.forEach((f: string) => lines.push(`- ${f}`));
+
+  lines.push(`\n## MVP Plan`);
+  plan?.mvp_steps?.forEach((step: any) => {
+    lines.push(`\n### Step ${step.step}: ${step.title}`);
+    lines.push(`${step.description}`);
+    lines.push(`- **Estimated:** ${step.estimated_days} days`);
+    if (step.deliverable) lines.push(`- **Deliverable:** ${step.deliverable}`);
+  });
+
+  lines.push(`\n**Total Timeline:** ${plan?.total_estimated_weeks} weeks`);
+  lines.push(`**Complexity:** ${clarified?.technical_complexity}`);
+
+  lines.push(`\n## Must Have`);
+  plan?.features?.must_have?.forEach((f: string) => lines.push(`- ${f}`));
+
+  lines.push(`\n## Nice to Have`);
+  plan?.features?.nice_to_have?.forEach((f: string) => lines.push(`- ${f}`));
+
+  lines.push(`\n## System Design`);
+  lines.push(`${architecture?.system_design}`);
+
+  lines.push(`\n## API Endpoints`);
+  architecture?.api_endpoints?.forEach((ep: any) => {
+    lines.push(`- \`${ep.method} ${ep.path}\` — ${ep.description}`);
+  });
+
+  if (architecture?.mermaid_diagram) {
+    lines.push(`\n## Architecture Diagram`);
+    lines.push("```mermaid");
+    lines.push(architecture.mermaid_diagram);
+    lines.push("```");
+  }
+
+  lines.push(`\n## Evaluation`);
+  lines.push(`**Overall:** ${evaluation?.overall_feedback}`);
+  ["clarity", "logic", "completeness"].forEach((dim) => {
+    lines.push(`- **${dim}:** ${evaluation?.[dim]?.rating} — ${evaluation?.[dim]?.feedback}`);
+  });
+
+  if (evaluation?.improvements?.length > 0) {
+    lines.push(`\n## Improvements`);
+    evaluation.improvements.forEach((imp: string) => lines.push(`- ${imp}`));
+  }
+
+  const blob = new Blob([lines.join("\n")], { type: "text/markdown" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${clarified?.project_summary?.slice(0, 40) || "project-plan"}.md`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
   return (
     <>
       <Navbar />
@@ -331,20 +391,32 @@ export default function OutputView() {
 
               <p className="text-xs text-gray-600 mb-4">{evaluation.overall_feedback}</p>
 
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                {["clarity", "logic", "completeness"].map((dim) => (
-                  <div key={dim} className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-xs font-medium text-gray-500 capitalize mb-1">{dim}</p>
-                    <p className={`text-xs font-semibold ${
-                      evaluation[dim]?.rating === "Good" || evaluation[dim]?.rating === "Excellent"
-                        ? "text-green-600" : evaluation[dim]?.rating === "Fair"
-                        ? "text-yellow-600" : "text-red-600"
-                    }`}>
-                      {evaluation[dim]?.rating}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">{evaluation[dim]?.feedback}</p>
-                  </div>
-                ))}
+              <div className="space-y-3 mb-4">
+                {["clarity", "logic", "completeness"].map((dim) => {
+                  const rating = evaluation[dim]?.rating;
+                  const pct = rating === "Excellent" ? 100 : rating === "Good" ? 78 : rating === "Fair" ? 50 : 25;
+                  const color = rating === "Excellent" || rating === "Good"
+                    ? "bg-green-500" : rating === "Fair"
+                    ? "bg-yellow-400" : "bg-red-400";
+                  const textColor = rating === "Excellent" || rating === "Good"
+                    ? "text-green-600" : rating === "Fair"
+                    ? "text-yellow-600" : "text-red-500";
+                  return (
+                    <div key={dim}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-medium text-gray-600 capitalize">{dim}</span>
+                        <span className={`text-xs font-semibold ${textColor}`}>{rating}</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-2">
+                        <div
+                          className={`${color} h-2 rounded-full transition-all duration-500`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">{evaluation[dim]?.feedback}</p>
+                    </div>
+                  );
+                })}
               </div>
 
               {evaluation.improvements?.length > 0 && (
@@ -406,8 +478,14 @@ export default function OutputView() {
                 : "Save Project"}
             </button>
             <button
+              onClick={exportMarkdown}
+              className="px-4 py-3 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition"
+            >
+              ↓ Export .md
+            </button>
+            <button
               onClick={() => navigate("/create")}
-              className="px-6 py-3 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition"
+              className="px-4 py-3 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition"
             >
               New Project
             </button>
