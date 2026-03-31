@@ -29,39 +29,41 @@ function ScoreBadge({ score }: { score: number }) {
 
 function MermaidDiagram({ chart }: { chart: string }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if (!ref.current || !chart) return;
+    setFailed(false);
 
     import("mermaid").then((mermaid) => {
       mermaid.default.initialize({
         startOnLoad: false,
         theme: "neutral",
         securityLevel: "loose",
-        flowchart: { useMaxWidth: true, htmlLabels: true },
       });
-
-      // Clean the chart string
-      const cleaned = chart
-        .replace(/\|>/g, "-->")   // fix malformed arrows
-        .replace(/;/g, "\n")      // fix semicolon-separated nodes
-        .trim();
 
       const id = "mermaid-" + Date.now();
       ref.current!.innerHTML = "";
 
       mermaid.default
-        .render(id, cleaned)
+        .render(id, chart.trim())
         .then(({ svg }) => {
           if (ref.current) ref.current.innerHTML = svg;
         })
-        .catch(() => {
-          // Fallback — show as code block
-          if (ref.current)
-            ref.current.innerHTML = `<pre class="text-xs text-gray-500 whitespace-pre-wrap overflow-auto">${cleaned}</pre>`;
-        });
+        .catch(() => setFailed(true));
     });
   }, [chart]);
+
+  if (failed) {
+    return (
+      <div className="bg-gray-50 rounded-xl p-4">
+        <p className="text-xs font-medium text-gray-500 mb-2">Architecture Diagram</p>
+        <pre className="text-xs text-gray-500 whitespace-pre-wrap overflow-auto leading-relaxed">
+          {chart}
+        </pre>
+      </div>
+    );
+  }
 
   return (
     <div
