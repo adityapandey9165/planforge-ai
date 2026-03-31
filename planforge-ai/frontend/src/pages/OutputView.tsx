@@ -32,21 +32,41 @@ function MermaidDiagram({ chart }: { chart: string }) {
 
   useEffect(() => {
     if (!ref.current || !chart) return;
+
     import("mermaid").then((mermaid) => {
-      mermaid.default.initialize({ startOnLoad: false, theme: "neutral" });
-      const id = "mermaid-" + Date.now();
-      mermaid.default.render(id, chart).then(({ svg }) => {
-        if (ref.current) ref.current.innerHTML = svg;
-      }).catch(() => {
-        if (ref.current) ref.current.innerHTML = `<pre class="text-xs text-gray-500">${chart}</pre>`;
+      mermaid.default.initialize({
+        startOnLoad: false,
+        theme: "neutral",
+        securityLevel: "loose",
+        flowchart: { useMaxWidth: true, htmlLabels: true },
       });
+
+      // Clean the chart string
+      const cleaned = chart
+        .replace(/\|>/g, "-->")   // fix malformed arrows
+        .replace(/;/g, "\n")      // fix semicolon-separated nodes
+        .trim();
+
+      const id = "mermaid-" + Date.now();
+      ref.current!.innerHTML = "";
+
+      mermaid.default
+        .render(id, cleaned)
+        .then(({ svg }) => {
+          if (ref.current) ref.current.innerHTML = svg;
+        })
+        .catch(() => {
+          // Fallback — show as code block
+          if (ref.current)
+            ref.current.innerHTML = `<pre class="text-xs text-gray-500 whitespace-pre-wrap overflow-auto">${cleaned}</pre>`;
+        });
     });
   }, [chart]);
 
   return (
     <div
       ref={ref}
-      className="bg-gray-50 rounded-xl p-4 flex items-center justify-center min-h-32"
+      className="bg-gray-50 rounded-xl p-4 flex items-center justify-center min-h-32 overflow-auto"
     />
   );
 }
