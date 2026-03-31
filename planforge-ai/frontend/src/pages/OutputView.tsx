@@ -32,27 +32,31 @@ function MermaidDiagram({ chart }: { chart: string }) {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    if (!ref.current || !chart) return;
-    setFailed(false);
+  if (!ref.current || !chart) return;
+  setFailed(false);
 
-    import("mermaid").then((mermaid) => {
-      mermaid.default.initialize({
-        startOnLoad: false,
-        theme: "neutral",
-        securityLevel: "loose",
-      });
-
-      const id = "mermaid-" + Date.now();
-      ref.current!.innerHTML = "";
-
-      mermaid.default
-        .render(id, chart.trim())
-        .then(({ svg }) => {
-          if (ref.current) ref.current.innerHTML = svg;
-        })
-        .catch(() => setFailed(true));
+  import("mermaid").then((mermaid) => {
+    mermaid.default.initialize({
+      startOnLoad: false,
+      theme: "neutral",
+      securityLevel: "loose",
+      suppressErrorRendering: true,  // ← add this
     });
-  }, [chart]);
+
+    const id = "mermaid-" + Date.now();
+    ref.current!.innerHTML = "";
+
+    mermaid.default
+      .render(id, chart.trim())
+      .then(({ svg }) => {
+        if (ref.current) ref.current.innerHTML = svg;
+      })
+      .catch(() => {
+        if (ref.current) ref.current.innerHTML = ""; // clear any error UI
+        setFailed(true);
+      });
+  });
+}, [chart]);
 
   if (failed) {
     return (
