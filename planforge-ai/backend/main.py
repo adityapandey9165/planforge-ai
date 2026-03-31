@@ -21,10 +21,13 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # ← will add Vercel URL at deploy
+    allow_origins=[
+        "http://localhost:5173",
+        "https://planforge-ai-jade.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*", "x-groq-key"],       # ← allow custom header
+    allow_headers=["*", "x-groq-key"],
 )
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
