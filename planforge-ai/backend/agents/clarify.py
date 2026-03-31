@@ -44,7 +44,7 @@ async def get_clarification_questions(form_data: dict, user_groq_key: str = None
         return [{"id": 1, "question": "What is the primary problem this solves?", "why": "Helps focus the plan"}]
 
 
-async def clarify(form_data: dict, qa_pairs: list = None) -> dict:
+async def clarify(form_data: dict, qa_pairs: list = None, user_groq_key: str = None) -> dict:
     """Agent 1b — Produce structured summary from form + Q&A answers."""
     template = load_prompt("clarify_prompt.txt")
 
@@ -66,7 +66,7 @@ async def clarify(form_data: dict, qa_pairs: list = None) -> dict:
         type=form_data.get("type", ""),
         qa_pairs=qa_text,
     )
-    raw = await call_llm(prompt)
+    raw = await call_llm(prompt, user_groq_key=user_groq_key)
     try:
         return _parse_json(raw)
     except Exception:

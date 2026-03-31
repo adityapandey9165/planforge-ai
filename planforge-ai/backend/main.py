@@ -14,7 +14,7 @@ from agents.architect import architect
 from agents.evaluator import evaluate
 from agents.prompt_loader import load_prompt, fill_prompt
 from agents.llm import call_llm
-
+from agents.bad_idea_detector import detect_bad_idea
 load_dotenv()
 
 app = FastAPI()
@@ -114,7 +114,18 @@ async def get_questions(
         return {"questions": questions}
     except Exception as e:
         handle_llm_error(e)
-
+@app.post("/detect-bad-idea")
+async def bad_idea(
+    data: ProjectInput,
+    request: Request,
+    user_id: str = Depends(verify_token),
+):
+    user_groq_key = get_user_groq_key(request)
+    try:
+        result = await detect_bad_idea(data.model_dump(), user_groq_key=user_groq_key)
+        return result
+    except Exception as e:
+        handle_llm_error(e)
 
 @app.post("/generate")
 async def generate(
