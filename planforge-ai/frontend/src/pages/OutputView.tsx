@@ -62,6 +62,12 @@ export default function OutputView() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [groupId, setGroupId] = useState<string | null>(
+  location.state?.groupId || null
+);
+ const [currentVersion, setCurrentVersion] = useState<number>(
+  location.state?.version || 1
+);
   const [rateLimited, setRateLimited] = useState(false);
   useEffect(() => {
     if (!result) navigate("/create");
@@ -108,26 +114,35 @@ export default function OutputView() {
 };
 
   const handleSave = async () => {
-    setSaving(true);
-    setError("");
-    try {
-      const { data } = await supabase.auth.getSession();
-      const user_id = data.session?.user.id;
+  setSaving(true);
+  setError("");
+  try {
+    const { data } = await supabase.auth.getSession();
+    const user_id = data.session?.user.id;
 
-      await supabase.from("projects").insert({
-        user_id,
-        title: clarified?.project_summary?.slice(0, 80) || "Untitled Project",
-        input_data: currentResult.input,
-        output_data: currentResult,
-        score: evaluation?.score || null,
-      });
-      setSaved(true);
-    } catch {
-      setError("Failed to save. Please try again.");
-    } finally {
-      setSaving(false);
-    }
-  };
+    // If no groupId yet, this is v1 — generate a new group
+    const newGroupId = groupId || crypto.randomUUID();
+    const newVersion = groupId ? currentVersion + 1 : 1;
+
+    await supabase.from("projects").insert({
+      user_id,
+      title: clarified?.project_summary?.slice(0, 80) || "Untitled Project",
+      input_data: currentResult.input,
+      output_data: currentResult,
+      score: evaluation?.score || null,
+      group_id: newGroupId,
+      version: newVersion,
+    });
+
+    setGroupId(newGroupId);
+    setCurrentVersion(newVersion);
+    setSaved(true);
+  } catch {
+    setError("Failed to save. Please try again.");
+  } finally {
+    setSaving(false);
+  }
+};
 
   return (
     <>
@@ -329,7 +344,7 @@ export default function OutputView() {
                   : "bg-indigo-600 text-white hover:bg-indigo-700"
               } disabled:opacity-50`}
             >
-              {saved ? "✓ Saved to Dashboard" : saving ? "Saving..." : "Save Project"}
+              {saved ? `✓ Saved as v${currentVersion}` : saving ? "Saving..." : groupId ? `Save as v${currentVersion + 1}` : "Save Project"}
             </button>
             <button
               onClick={() => navigate("/create")}
