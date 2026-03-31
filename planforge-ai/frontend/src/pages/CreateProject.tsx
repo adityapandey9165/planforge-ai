@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import Navbar from "../components/Navbar";
-
+import { getApiHeaders } from "../lib/apiConfig";
+import RateLimitBanner from "../components/RateLimitBanner";
 const API = "http://localhost:8000";
 
 async function getToken() {
@@ -38,23 +39,26 @@ export default function CreateProject() {
   // Questions state
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<number, string>>({});
-
-  const handleFormSubmit = async (e: React.FormEvent) => {
+  const [rateLimited, setRateLimited] = useState(false);
+   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setRateLimited(false);
     setStep("generating");
 
     try {
       const token = await getToken();
       const res = await fetch(`${API}/clarify-questions`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: getApiHeaders(token),
         body: JSON.stringify(form),
       });
 
+      if (res.status === 429) {
+        setRateLimited(true);
+        setStep("form");
+        return;
+      }
       if (!res.ok) throw new Error("Failed to get questions");
       const data = await res.json();
       setQuestions(data.questions);
@@ -65,9 +69,11 @@ export default function CreateProject() {
     }
   };
 
+
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setRateLimited(false);
     setStep("generating");
 
     const qa_pairs = questions.map((q) => ({
@@ -79,13 +85,15 @@ export default function CreateProject() {
       const token = await getToken();
       const res = await fetch(`${API}/generate`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: getApiHeaders(token),
         body: JSON.stringify({ form_data: form, qa_pairs }),
       });
 
+      if (res.status === 429) {
+        setRateLimited(true);
+        setStep("questions");
+        return;
+      }
       if (!res.ok) throw new Error("Generation failed");
       const result = await res.json();
       navigate("/output", { state: { result, form } });
@@ -137,7 +145,9 @@ export default function CreateProject() {
                 Your answers help the AI generate a much more accurate plan.
               </p>
             </div>
-
+            {rateLimited && (
+            <RateLimitBanner onDismiss={() => setRateLimited(false)} />
+            )}
             {error && (
               <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-lg mb-4">
                 {error}
@@ -207,7 +217,9 @@ export default function CreateProject() {
               Fill in the details and we'll generate a complete plan for you.
             </p>
           </div>
-
+            {rateLimited && (
+            <RateLimitBanner onDismiss={() => setRateLimited(false)} />
+            )}
           {error && (
             <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-lg mb-4">
               {error}

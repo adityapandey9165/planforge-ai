@@ -27,7 +27,7 @@ def _parse_json(raw: str):
     raise ValueError("Not valid evaluation JSON")
 
 
-async def evaluate(plan_data: dict, arch_data: dict) -> dict:
+async def evaluate(plan_data: dict, arch_data: dict, user_groq_key: str = None) -> dict:
     template = load_prompt("evaluator_prompt.txt")
     prompt = fill_prompt(
         template,
@@ -38,7 +38,7 @@ async def evaluate(plan_data: dict, arch_data: dict) -> dict:
         endpoint_count=len(arch_data.get("api_endpoints", [])),
         table_count=len(arch_data.get("database_schema", [])),
     )
-    raw = await call_llm(prompt)
+    raw = await call_llm(prompt, user_groq_key=user_groq_key)
 
     try:
         return _parse_json(raw)

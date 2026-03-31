@@ -2,7 +2,8 @@ import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import Navbar from "../components/Navbar";
-
+import { getApiHeaders } from "../lib/apiConfig";
+import RateLimitBanner from "../components/RateLimitBanner";
 const API = "http://localhost:8000";
 
 async function getToken() {
@@ -61,7 +62,7 @@ export default function OutputView() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
-
+  const [rateLimited, setRateLimited] = useState(false);
   useEffect(() => {
     if (!result) navigate("/create");
   }, [result, navigate]);
@@ -71,38 +72,40 @@ export default function OutputView() {
   const { clarified, plan, architecture, evaluation } = currentResult;
 
   const handleEnhance = async () => {
-    if (!enhanceText.trim()) return;
-    setEnhancing(true);
-    setError("");
+  if (!enhanceText.trim()) return;
+  setEnhancing(true);
+  setError("");
+  setRateLimited(false);
 
-    try {
-      const token = await getToken();
-      const res = await fetch(`${API}/enhance`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          original_plan: plan,
-          original_architecture: architecture,
-          original_score: evaluation?.score || 0,
-          original_feedback: evaluation?.overall_feedback || "",
-          enhancement_request: enhanceText,
-        }),
-      });
+  try {
+    const token = await getToken();
+    const res = await fetch(`${API}/enhance`, {
+      method: "POST",
+      headers: getApiHeaders(token),
+      body: JSON.stringify({
+        original_plan: plan,
+        original_architecture: architecture,
+        original_score: evaluation?.score || 0,
+        original_feedback: evaluation?.overall_feedback || "",
+        enhancement_request: enhanceText,
+      }),
+    });
 
-      if (!res.ok) throw new Error("Enhancement failed");
-      const enhanced = await res.json();
-      setCurrentResult({ ...currentResult, ...enhanced });
-      setEnhanceText("");
-      setSaved(false);
-    } catch {
-      setError("Enhancement failed. Try rephrasing your request.");
-    } finally {
-      setEnhancing(false);
+    if (res.status === 429) {
+      setRateLimited(true);
+      return;
     }
-  };
+    if (!res.ok) throw new Error("Enhancement failed");
+    const enhanced = await res.json();
+    setCurrentResult({ ...currentResult, ...enhanced });
+    setEnhanceText("");
+    setSaved(false);
+  } catch {
+    setError("Enhancement failed. Try rephrasing your request.");
+  } finally {
+    setEnhancing(false);
+  }
+};
 
   const handleSave = async () => {
     setSaving(true);
@@ -140,7 +143,9 @@ export default function OutputView() {
             </div>
             {evaluation?.score && <ScoreBadge score={evaluation.score} />}
           </div>
-
+          {rateLimited && (
+            <RateLimitBanner onDismiss={() => setRateLimited(false)} />
+            )}
           {error && (
             <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-lg">
               {error}

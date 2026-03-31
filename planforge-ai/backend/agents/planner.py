@@ -22,12 +22,11 @@ def _parse_json(raw: str):
     clean = clean[start:end]
     return json.loads(clean)
 
-
-async def plan(clarified: dict) -> dict:
+async def plan(clarified: dict, user_groq_key: str = None) -> dict:
     """Agent 2 — Generate a detailed project plan from clarified data."""
     template = load_prompt("planner_prompt.txt")
     prompt = fill_prompt(template, clarified=json.dumps(clarified, indent=2))
-    raw = await call_llm(prompt)
+    raw = await call_llm(prompt, user_groq_key=user_groq_key)
     try:
         return _parse_json(raw)
     except Exception:

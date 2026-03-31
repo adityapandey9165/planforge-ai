@@ -4,6 +4,7 @@ import Signup from "./components/Auth/Signup";
 import Dashboard from "./pages/Dashboard";
 import CreateProject from "./pages/CreateProject";
 import OutputView from "./pages/OutputView";
+import Settings from "./pages/Settings";  // ← add this
 
 const router = createBrowserRouter([
   { path: "/", element: <Login /> },
@@ -12,6 +13,7 @@ const router = createBrowserRouter([
   { path: "/dashboard", element: <Dashboard /> },
   { path: "/create", element: <CreateProject /> },
   { path: "/output", element: <OutputView /> },
+  { path: "/settings", element: <Settings /> },  // ← add this
 ]);
 
 export default function App() {

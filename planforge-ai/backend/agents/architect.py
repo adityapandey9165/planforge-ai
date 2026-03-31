@@ -24,10 +24,10 @@ def _parse_json(raw: str):
     raise ValueError("Could not parse JSON")
 
 
-async def architect(plan_data: dict) -> dict:
+async def architect(plan_data: dict, user_groq_key: str = None) -> dict:
     template = load_prompt("architect_prompt.txt")
     prompt = fill_prompt(template, plan=json.dumps(plan_data, indent=2))
-    raw = await call_llm(prompt)
+    raw = await call_llm(prompt, user_groq_key=user_groq_key)
 
     try:
         return _parse_json(raw)

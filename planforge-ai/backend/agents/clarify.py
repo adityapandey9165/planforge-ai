@@ -23,7 +23,7 @@ def _parse_json(raw: str):
     return json.loads(clean)
 
 
-async def get_clarification_questions(form_data: dict) -> list:
+async def get_clarification_questions(form_data: dict, user_groq_key: str = None) -> list:
     """Agent 1a — Generate 5 smart questions based on the form."""
     template = load_prompt("clarify_questions_prompt.txt")
     prompt = fill_prompt(
@@ -37,7 +37,7 @@ async def get_clarification_questions(form_data: dict) -> list:
         deployment_needed=form_data.get("deployment_needed", False),
         type=form_data.get("type", ""),
     )
-    raw = await call_llm(prompt)
+    raw = await call_llm(prompt, user_groq_key=user_groq_key)
     try:
         return _parse_json(raw)
     except Exception:

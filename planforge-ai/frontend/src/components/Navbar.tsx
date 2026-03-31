@@ -30,6 +30,12 @@ export default function Navbar() {
             + New Project
           </button>
           <button
+            onClick={() => navigate("/settings")}
+            className="text-sm text-gray-500 hover:text-gray-800 transition"
+          >
+            ⚙️ Settings
+          </button>
+          <button
             onClick={handleLogout}
             className="text-sm text-gray-500 hover:text-gray-800 transition"
           >
