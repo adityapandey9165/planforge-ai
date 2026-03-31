@@ -11,3 +11,12 @@ The JSON must have exactly these 4 keys: system_design, api_endpoints, database_
 - api_endpoints: array of all REST endpoints with method, path, description, auth_required
 - database_schema: array of tables with name and columns array
 - mermaid_diagram: valid Mermaid graph TD string showing the architecture flow
+-MERMAID RULES:
+- Use ONLY --> for arrows, never |> or other variants
+- Each node on its own line, no semicolons
+- Keep it simple — max 8 nodes
+- Example format:
+graph TD
+    A[Client] --> B[Backend]
+    B --> C[Database]
+    B --> D[Auth Service]

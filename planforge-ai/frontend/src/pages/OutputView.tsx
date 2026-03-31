@@ -32,31 +32,39 @@ function MermaidDiagram({ chart }: { chart: string }) {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-  if (!ref.current || !chart) return;
-  setFailed(false);
+    if (!ref.current || !chart) return;
+    setFailed(false);
 
-  import("mermaid").then((mermaid) => {
-    mermaid.default.initialize({
-      startOnLoad: false,
-      theme: "neutral",
-      securityLevel: "loose",
-      suppressErrorRendering: true,  // ← add this
-    });
+    // Clean malformed LLM mermaid output
+    const cleaned = chart
+      .trim()
+      .replace(/\|>/g, "-->")           // fix |> arrows
+      .replace(/-->\|([^|]+)\|>/g, "-->|$1|")  // fix mixed arrows
+      .replace(/(\w+)\s*;\s*/g, "$1\n")  // fix semicolons
+      .replace(/\n\s*\n/g, "\n");        // remove blank lines
 
-    const id = "mermaid-" + Date.now();
-    ref.current!.innerHTML = "";
-
-    mermaid.default
-      .render(id, chart.trim())
-      .then(({ svg }) => {
-        if (ref.current) ref.current.innerHTML = svg;
-      })
-      .catch(() => {
-        if (ref.current) ref.current.innerHTML = ""; // clear any error UI
-        setFailed(true);
+    import("mermaid").then((mermaid) => {
+      mermaid.default.initialize({
+        startOnLoad: false,
+        theme: "neutral",
+        securityLevel: "loose",
+        suppressErrorRendering: true,
       });
-  });
-}, [chart]);
+
+      const id = "mermaid-" + Date.now();
+      ref.current!.innerHTML = "";
+
+      mermaid.default
+        .render(id, cleaned)
+        .then(({ svg }) => {
+          if (ref.current) ref.current.innerHTML = svg;
+        })
+        .catch(() => {
+          if (ref.current) ref.current.innerHTML = "";
+          setFailed(true);
+        });
+    });
+  }, [chart]);
 
   if (failed) {
     return (
@@ -76,6 +84,8 @@ function MermaidDiagram({ chart }: { chart: string }) {
     />
   );
 }
+
+
 export default function OutputView() {
   const location = useLocation();
   const navigate = useNavigate();
