@@ -4,7 +4,7 @@ import { supabase } from "../lib/supabase";
 import Navbar from "../components/Navbar";
 import { getApiHeaders } from "../lib/apiConfig";
 import RateLimitBanner from "../components/RateLimitBanner";
-const API = "http://localhost:8000";
+const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 async function getToken() {
   const { data } = await supabase.auth.getSession();
