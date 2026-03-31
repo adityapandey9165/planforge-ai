@@ -50,7 +50,6 @@ function MermaidDiagram({ chart }: { chart: string }) {
     />
   );
 }
-
 export default function OutputView() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -62,13 +61,25 @@ export default function OutputView() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
-  const [groupId, setGroupId] = useState<string | null>(
-  location.state?.groupId || null
-);
- const [currentVersion, setCurrentVersion] = useState<number>(
-  location.state?.version || 1
-);
   const [rateLimited, setRateLimited] = useState(false);
+  const [groupId, setGroupId] = useState<string | null>(location.state?.groupId || null);
+  const [currentVersion, setCurrentVersion] = useState<number>(location.state?.version || 1);
+  const [versions, setVersions] = useState<{ version: number; output_data: any; score: number | null }[]>([]);
+  const [lastSavedResult, setLastSavedResult] = useState<string>(JSON.stringify(result));
+
+  // Load all versions for this group
+  useEffect(() => {
+    if (!groupId) return;
+    supabase
+      .from("projects")
+      .select("version, output_data, score")
+      .eq("group_id", groupId)
+      .order("version", { ascending: true })
+      .then(({ data }) => {
+        if (data) setVersions(data);
+      });
+  }, [groupId]);
+
   useEffect(() => {
     if (!result) navigate("/create");
   }, [result, navigate]);
@@ -77,73 +88,94 @@ export default function OutputView() {
 
   const { clarified, plan, architecture, evaluation } = currentResult;
 
+  const hasChanges = JSON.stringify(currentResult) !== lastSavedResult;
+
   const handleEnhance = async () => {
-  if (!enhanceText.trim()) return;
-  setEnhancing(true);
-  setError("");
-  setRateLimited(false);
+    if (!enhanceText.trim()) return;
+    setEnhancing(true);
+    setError("");
+    setRateLimited(false);
 
-  try {
-    const token = await getToken();
-    const res = await fetch(`${API}/enhance`, {
-      method: "POST",
-      headers: getApiHeaders(token),
-      body: JSON.stringify({
-        original_plan: plan,
-        original_architecture: architecture,
-        original_score: evaluation?.score || 0,
-        original_feedback: evaluation?.overall_feedback || "",
-        enhancement_request: enhanceText,
-      }),
-    });
+    try {
+      const token = await getToken();
+      const res = await fetch(`${API}/enhance`, {
+        method: "POST",
+        headers: getApiHeaders(token),
+        body: JSON.stringify({
+          original_plan: plan,
+          original_architecture: architecture,
+          original_score: evaluation?.score || 0,
+          original_feedback: evaluation?.overall_feedback || "",
+          enhancement_request: enhanceText,
+        }),
+      });
 
-    if (res.status === 429) {
-      setRateLimited(true);
-      return;
+      if (res.status === 429) {
+        setRateLimited(true);
+        return;
+      }
+      if (!res.ok) throw new Error("Enhancement failed");
+      const enhanced = await res.json();
+      setCurrentResult({ ...currentResult, ...enhanced });
+      setEnhanceText("");
+      setSaved(false);
+    } catch {
+      setError("Enhancement failed. Try rephrasing your request.");
+    } finally {
+      setEnhancing(false);
     }
-    if (!res.ok) throw new Error("Enhancement failed");
-    const enhanced = await res.json();
-    setCurrentResult({ ...currentResult, ...enhanced });
-    setEnhanceText("");
-    setSaved(false);
-  } catch {
-    setError("Enhancement failed. Try rephrasing your request.");
-  } finally {
-    setEnhancing(false);
-  }
-};
+  };
 
   const handleSave = async () => {
-  setSaving(true);
-  setError("");
-  try {
-    const { data } = await supabase.auth.getSession();
-    const user_id = data.session?.user.id;
+    if (!hasChanges && saved) {
+      setError("No changes to save.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const { data } = await supabase.auth.getSession();
+      const user_id = data.session?.user.id;
 
-    // If no groupId yet, this is v1 — generate a new group
-    const newGroupId = groupId || crypto.randomUUID();
-    const newVersion = groupId ? currentVersion + 1 : 1;
+      const newGroupId = groupId || crypto.randomUUID();
+      const newVersion = groupId ? currentVersion + 1 : 1;
 
-    await supabase.from("projects").insert({
-      user_id,
-      title: clarified?.project_summary?.slice(0, 80) || "Untitled Project",
-      input_data: currentResult.input,
-      output_data: currentResult,
-      score: evaluation?.score || null,
-      group_id: newGroupId,
-      version: newVersion,
-    });
+      await supabase.from("projects").insert({
+        user_id,
+        title: clarified?.project_summary?.slice(0, 80) || "Untitled Project",
+        input_data: currentResult.input,
+        output_data: currentResult,
+        score: evaluation?.score || null,
+        group_id: newGroupId,
+        version: newVersion,
+      });
 
-    setGroupId(newGroupId);
-    setCurrentVersion(newVersion);
+      setGroupId(newGroupId);
+      setCurrentVersion(newVersion);
+      setLastSavedResult(JSON.stringify(currentResult));
+      setSaved(true);
+
+      // Refresh versions list
+      const { data: vData } = await supabase
+        .from("projects")
+        .select("version, output_data, score")
+        .eq("group_id", newGroupId)
+        .order("version", { ascending: true });
+      if (vData) setVersions(vData);
+
+    } catch {
+      setError("Failed to save. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSwitchVersion = (v: { version: number; output_data: any }) => {
+    setCurrentResult(v.output_data);
+    setCurrentVersion(v.version);
+    setLastSavedResult(JSON.stringify(v.output_data));
     setSaved(true);
-  } catch {
-    setError("Failed to save. Please try again.");
-  } finally {
-    setSaving(false);
-  }
-};
-
+  };
   return (
     <>
       <Navbar />
@@ -164,6 +196,27 @@ export default function OutputView() {
           {error && (
             <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-lg">
               {error}
+            </div>
+          )}
+          {/* Version switcher */}
+          {versions.length > 1 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-400">Versions:</span>
+              <div className="flex gap-1">
+                {versions.map((v) => (
+                  <button
+                    key={v.version}
+                    onClick={() => handleSwitchVersion(v)}
+                    className={`text-xs px-2.5 py-1 rounded-full border transition font-medium ${
+                      currentVersion === v.version
+                        ? "bg-indigo-600 text-white border-indigo-600"
+                        : "border-gray-200 text-gray-500 hover:border-indigo-300"
+                    }`}
+                  >
+                    v{v.version}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -332,19 +385,25 @@ export default function OutputView() {
               </button>
             </div>
           </div>
-
+ 
           {/* Save */}
           <div className="flex gap-3">
             <button
               onClick={handleSave}
-              disabled={saving || saved}
+              disabled={saving || (saved && !hasChanges)}
               className={`flex-1 py-3 rounded-xl text-sm font-medium transition ${
-                saved
+                saved && !hasChanges
                   ? "bg-green-600 text-white"
                   : "bg-indigo-600 text-white hover:bg-indigo-700"
               } disabled:opacity-50`}
             >
-              {saved ? `✓ Saved as v${currentVersion}` : saving ? "Saving..." : groupId ? `Save as v${currentVersion + 1}` : "Save Project"}
+              {saved && !hasChanges
+                ? `✓ Saved as v${currentVersion}`
+                : saving
+                ? "Saving..."
+                : groupId
+                ? `Save as v${currentVersion + 1}`
+                : "Save Project"}
             </button>
             <button
               onClick={() => navigate("/create")}
